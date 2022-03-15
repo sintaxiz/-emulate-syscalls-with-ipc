@@ -1,0 +1,5 @@
+cmake_minimum_required (VERSION 2.8.11)
+project (perfomance_test)
+add_executable (pipes_tracer ./pipes/tracer.c)
+add_executable (ptrace_highload ./ptrace/highload.c)
+add_executable (ptrace_tracer ./ptrace/tracer.c)
