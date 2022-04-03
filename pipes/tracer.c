@@ -6,15 +6,14 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
+#include "../common.h"
 
-void pipe_close(int fd, int in_pipe, int out_pipe) {
+int pipe_close(int fd, int in_pipe, int out_pipe) {
     write(out_pipe, &fd, 4);
     int close_result;
     read(in_pipe, &close_result, 4);
     // printf("%d\n", close_result);
-    if (close_result == 0) {
-        // successfully closed
-    }
+    return close_result;
 }
 
 void tracee(int in_pipe, int out_pipe, int iter_count) {
@@ -32,7 +31,7 @@ void tracer(int in_pipe, int out_pipe) {
 }
 
 int main(int argc, char const *argv[]) {
-    int iter_count;
+    int iter_count = DEFAULT_ITER_COUNT;
     if (argc > 1) {
         long conversion_result = strtol(argv[1], NULL, 10);
         if (errno == 0) {

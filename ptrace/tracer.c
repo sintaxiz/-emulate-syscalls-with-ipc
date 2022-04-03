@@ -5,10 +5,7 @@
 #include <sys/user.h>
 #include <sys/wait.h>
 #include <unistd.h>
-
-// x86_64 architecture
-//:~$ ausyscall --dump  : shows syscall + number
-#define SYSCALL_CLOSE 3
+#include "../common.h"
 
 void trace(pid_t tracee_id) {
     int status;
@@ -18,11 +15,11 @@ void trace(pid_t tracee_id) {
     while (!WIFEXITED(status)) {
         ptrace(PTRACE_SYSCALL, tracee_id, 0, 0);
         waitpid(tracee_id, &status, 0);
-        if (WIFSTOPPED(status) && WSTOPSIG(status) && 0x80) {
+        if (WIFSTOPPED(status) && WSTOPSIG(status)) {
             struct ptrace_syscall_info syscall_info;
             ptrace(PTRACE_GET_SYSCALL_INFO, tracee_id, sizeof(struct ptrace_syscall_info), &syscall_info);
             if (syscall_info.op == PTRACE_SYSCALL_INFO_ENTRY) {
-                if (syscall_info.entry.nr == SYSCALL_CLOSE) {
+                if (syscall_info.entry.nr == SYSCALL_CODE_CLOSE) {
                     close(1337);
                 }
             }
@@ -45,7 +42,7 @@ int main(int argc, char **argv) {
     if (argc > 1) {
         long conversion_result = strtol(argv[1], NULL, 10);
         if (errno != 0) {
-            iter_count = 10e5;
+            iter_count = DEFAULT_ITER_COUNT;
         } else {
             iter_count = (int)conversion_result;
         }
