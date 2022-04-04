@@ -3,7 +3,7 @@
 
 // x86_64 architecture
 //      :~$ ausyscall --dump              -- shows syscall + number
-#define SYSCALL_CODE_CLOSE 3
+#define SYSCALL_CODE_GETPID 39
 
 #define DEFAULT_ITER_COUNT 10e5
 

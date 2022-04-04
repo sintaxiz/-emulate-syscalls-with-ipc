@@ -34,17 +34,15 @@ char *write_cmd(char *shm_addr, cmd command) {
     return shm_addr + sizeof(cmd);
 }
 
-void write_close_syscall(char *shm_addr, int fd) {
+void write_getpid_syscall(char *shm_addr) {
     char *shm_pos = shm_addr;
-    *shm_pos = SYSCALL_CODE_CLOSE;
-    ++shm_pos;
-    *(int *) shm_pos = fd;
+    *shm_pos = SYSCALL_CODE_GETPID;
 }
 
-int shm_close(int fd, char *shm_addr) {
+int shm_getpid(char *shm_addr) {
     cmd close_cmd = {SYSCALL};
     char *curr_shm_addr = write_cmd(shm_addr + 1, close_cmd);
-    write_close_syscall(curr_shm_addr, fd);
+    write_getpid_syscall(curr_shm_addr);
 
     *shm_addr = SHM_TRACER_WRITES;
     while (*shm_addr != SHM_TRACER_WAITS);
@@ -61,8 +59,9 @@ void shm_exit(char *shm_addr) {
 }
 
 void tracee(char *shm_addr, int iter_count) {
-    for (int i = 0; i < iter_count; ++i) {
-        shm_close(1337, shm_addr);
+    for (int i = 0; i < DEFAULT_ITER_COUNT; ++i) {
+        pid_t my_pid = shm_getpid(shm_addr);
+        // printf("%d\n", my_pid);
     }
     shm_exit(shm_addr);
 }
@@ -72,7 +71,7 @@ cmd wait_for_cmd(const char *shm_addr) {
     return *(cmd *) (shm_addr + 1);
 }
 
-void tracer(char *shm_addr) {
+void tracer(char *shm_addr, pid_t tracee_id) {
     bool tracing = true;
     while (tracing) {
         cmd command = wait_for_cmd(shm_addr);
@@ -85,17 +84,16 @@ void tracer(char *shm_addr) {
             case SYSCALL:
                 // printf("Get syscall command\n");
                 char syscall = *(shm_pos);
-                if (syscall == SYSCALL_CODE_CLOSE) {
-                    int fd = *(int *) (shm_pos + 1);
-                    // printf("get close request. %d\n", fd);
-                    *(int *) (shm_addr + 1) = close(fd);
+                if (syscall == SYSCALL_CODE_GETPID) {
+                    // printf("get getpid request. %d\n", fd);
+                    *(int *) (shm_addr + 1) = tracee_id;
                 }
                 break;
             default:
                 // printf("error command type! ignoring\n");
                 break;
         }
-        *shm_addr = 0x00;
+        *shm_addr = SHM_TRACER_WAITS;
     }
 }
 
@@ -121,10 +119,11 @@ int main(int argc, char **argv) {
 
     *shm_addr = SHM_TRACER_WAITS; // init state -- no communication btw processes
 
-    int pid = fork();
-    if (pid > 0) {
-        tracer(shm_addr);
-    } else if (pid == 0) {
+    int tracee_id = fork();
+    if (tracee_id > 0) {
+        //printf("tracee id = %d\n", tracee_id);
+        tracer(shm_addr, tracee_id);
+    } else if (tracee_id == 0) {
         tracee(shm_addr, iter_count);
         exit(0);
     } else {

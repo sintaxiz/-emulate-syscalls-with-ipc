@@ -33,18 +33,13 @@ void trace(pid_t tracee_id) {
             ptrace(PTRACE_GETREGS, tracee_id, 0, &regs);
             // printf("syscall number: %llu\n", regs.orig_rax);
 
-            if (regs.orig_rax != SYSCALL_CODE_CLOSE) {
+            if (regs.orig_rax != SYSCALL_CODE_GETPID) {
                 redo_syscall(tracee_id, &status, &regs);
             } else {
-                int fd = regs.rdi;
-                if (fd != 1337) { // we want emulate only close(1337) that called from highload
-                    redo_syscall(tracee_id, &status, &regs);
-                } else {
-                    regs.rax = close(fd); 
+                    regs.rax = tracee_id;
                     ptrace(PTRACE_SETREGS, tracee_id, 0, &regs);
                     ptrace(PTRACE_SYSEMU_SINGLESTEP, tracee_id, 0, 0);
                     waitpid(tracee_id, &status, 0);
-                }
             }
         }
     }
@@ -54,7 +49,7 @@ void highload(int iter_count) {
     ptrace(PTRACE_TRACEME, 0, 0, 0);
     char iter_count_text[20];
     sprintf(iter_count_text, "%d", iter_count);
-    execl("./ptrace_highload", "./ptrace_highload", iter_count_text, NULL);
+    execl("./direct_syscall", "./direct_syscall", iter_count_text, NULL);
     perror("execl");
 }
 
@@ -68,10 +63,13 @@ int main(int argc, char **argv) {
     }
 
     pid_t tracee_id = fork();
-    if (tracee_id) {
+    if (tracee_id > 0) {
+        // printf("tracee id = %d\n", tracee_id);
         trace(tracee_id);
-    } else {
+    } else if (tracee_id == 0) {
         highload(iter_count);
+    } else {
+        perror("fork");
     }
     return 0;
 }

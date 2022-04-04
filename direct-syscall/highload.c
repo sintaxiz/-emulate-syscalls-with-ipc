@@ -13,7 +13,8 @@ int main(int argc, char const *argv[]) {
         }
     }
     for (int i = 0; i < iter_count; i++) {
-        close(1337);
+        pid_t my_pid = getpid();
+        // printf("my pid = %d\n", my_pid);
     }
     return 0;
 }

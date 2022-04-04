@@ -8,25 +8,29 @@
 #include <unistd.h>
 #include "../common.h"
 
-int pipe_close(int fd, int in_pipe, int out_pipe) {
-    write(out_pipe, &fd, 4);
-    int close_result;
-    read(in_pipe, &close_result, 4);
-    // printf("%d\n", close_result);
-    return close_result;
+int pipe_getpid(int in_pipe, int out_pipe) {
+    short syscall_getpid = SYSCALL_CODE_GETPID;
+    write(out_pipe, &syscall_getpid, 2);
+    pid_t getpid_result;
+    read(in_pipe, &getpid_result, sizeof(pid_t));
+    return getpid_result;
 }
 
 void tracee(int in_pipe, int out_pipe, int iter_count) {
     for (int i = 0; i < iter_count; i++) {
-        pipe_close(1337, in_pipe, out_pipe);
+        pipe_getpid(in_pipe, out_pipe);
     }
 }
 
-void tracer(int in_pipe, int out_pipe) {
-    int fd;
-    while (read(in_pipe, &fd, 4) > 0) {
-        int close_result = close(1337);
-        write(out_pipe, &close_result, sizeof(close_result));
+void tracer(int in_pipe, int out_pipe, pid_t tracee_id) {
+    short syscall;
+    while (read(in_pipe, &syscall, 2) > 0) {
+        if (syscall == SYSCALL_CODE_GETPID) {
+            pid_t getpid_result = tracee_id;
+            write(out_pipe, &getpid_result, sizeof(pid_t));
+        } else {
+            printf("unknown command.\n");
+        }
     }
 }
 
@@ -59,10 +63,11 @@ int main(int argc, char const *argv[]) {
     }
     // Tracer
     if (tracee_id != 0) {
+        // printf("tracee id = %d", tracee_id);
         close(tracee_out_pipe);
         close(tracee_in_pipe);
 
-        tracer(tracer_in_pipe, tracer_out_pipe);
+        tracer(tracer_in_pipe, tracer_out_pipe, tracee_id);
 
         close(tracer_in_pipe);
         close(tracer_out_pipe);
@@ -81,5 +86,4 @@ int main(int argc, char const *argv[]) {
         close(tracee_in_pipe);
         exit(EXIT_SUCCESS);
     }
-    return 0;
 }
