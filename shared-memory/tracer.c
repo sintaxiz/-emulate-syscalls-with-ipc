@@ -100,7 +100,7 @@ void tracer(char *shm_addr) {
 }
 
 int main(int argc, char **argv) {
-    int iter_count;
+    int iter_count = DEFAULT_ITER_COUNT;
     if (argc > 1) {
         long conversion_result = strtol(argv[1], NULL, 10);
         if (errno != 0) {
