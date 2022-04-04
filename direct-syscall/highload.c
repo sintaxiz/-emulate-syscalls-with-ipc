@@ -1,10 +1,11 @@
 #include <errno.h>
 #include <stdlib.h>
 #include <unistd.h>
-
-int iter_count = 10e5;
+#include "../common.h"
 
 int main(int argc, char const *argv[]) {
+    int iter_count = DEFAULT_ITER_COUNT;
+
     if (argc > 1) {
         long conversion_result = strtol(argv[1], NULL, 10);
         if (errno == 0) {

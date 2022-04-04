@@ -9,7 +9,11 @@ echo
 
 echo  time measurement:   pipes vs ptrace vs shared memory...
 echo  iteration count :    $ITER_COUNT
-echo 
+echo
+
+echo direct syscall:
+time ./direct_syscall $ITER_COUNT
+echo
 
 echo with pipes:
 time ./pipes_tracer $ITER_COUNT
