@@ -26,6 +26,7 @@ void tracer(int in_pipe, int out_pipe, pid_t tracee_id) {
     short syscall;
     while (read(in_pipe, &syscall, 2) > 0) {
         if (syscall == SYSCALL_CODE_GETPID) {
+            getpid();
             pid_t getpid_result = tracee_id;
             write(out_pipe, &getpid_result, sizeof(pid_t));
         } else {

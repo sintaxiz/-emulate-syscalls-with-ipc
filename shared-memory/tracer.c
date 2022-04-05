@@ -86,6 +86,7 @@ void tracer(char *shm_addr, pid_t tracee_id) {
                 char syscall = *(shm_pos);
                 if (syscall == SYSCALL_CODE_GETPID) {
                     // printf("get getpid request. %d\n", fd);
+                    getpid();
                     *(int *) (shm_addr + 1) = tracee_id;
                 }
                 break;

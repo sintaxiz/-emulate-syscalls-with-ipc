@@ -36,6 +36,7 @@ void trace(pid_t tracee_id) {
             if (regs.orig_rax != SYSCALL_CODE_GETPID) {
                 redo_syscall(tracee_id, &status, &regs);
             } else {
+                    getpid();
                     regs.rax = tracee_id;
                     ptrace(PTRACE_SETREGS, tracee_id, 0, &regs);
                     ptrace(PTRACE_SYSEMU_SINGLESTEP, tracee_id, 0, 0);
