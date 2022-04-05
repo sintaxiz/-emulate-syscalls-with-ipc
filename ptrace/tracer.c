@@ -39,7 +39,7 @@ void trace(pid_t tracee_id) {
                     getpid();
                     regs.rax = tracee_id;
                     ptrace(PTRACE_SETREGS, tracee_id, 0, &regs);
-                    ptrace(PTRACE_SYSEMU_SINGLESTEP, tracee_id, 0, 0);
+                    ptrace(PTRACE_SYSEMU, tracee_id, 0, 0);
                     waitpid(tracee_id, &status, 0);
             }
         }
