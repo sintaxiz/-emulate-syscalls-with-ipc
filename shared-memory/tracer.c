@@ -1,15 +1,15 @@
 #include <stdio.h>
-#include <sys/shm.h>
 #include <sys/types.h>
 #include <unistd.h>
 #include <stdlib.h>
 #include <sys/wait.h>
 #include <stdbool.h>
 #include <errno.h>
+#include <sys/mman.h>
+#include <fcntl.h>
 #include "../common.h"
 
 const int SHM_SIZE_BYTES = 1024;
-const int SHM_MODE = 0400 + 0200; // read + write for user
 
 enum cmd_t {
     EXIT, SYSCALL
@@ -109,15 +109,15 @@ int main(int argc, char **argv) {
             iter_count = (int)conversion_result;
         }
     }
+    int devzero = open("/dev/zero", O_RDWR);
+    check_error(devzero, "open");
 
-    int shm_id = shmget(IPC_PRIVATE, SHM_SIZE_BYTES, SHM_MODE);          // create shared memory segment
-    check_error(shm_id, "shmget");
-
-    char *shm_addr = shmat(shm_id, 0, 0);               // attach shared memory to process
-    if (shm_addr == (void *) -1) {
+    char *shm_addr = mmap(0, SHM_SIZE_BYTES, PROT_WRITE | PROT_READ, MAP_SHARED, devzero, 0);               // attach shared memory to process
+    if (shm_addr == MAP_FAILED) {
         perror("shmat");
         exit(-1);
     }
+    close(devzero);
 
     *shm_addr = SHM_TRACER_WAITS; // init state -- no communication btw processes
 
@@ -131,8 +131,6 @@ int main(int argc, char **argv) {
         perror("fork");
         exit(-1);
     }
-    shmdt(shm_addr);                                                    // detach
-    shmctl(shm_id, IPC_RMID, NULL);                                // delete shared memory segment
 
     return 0;
 }
